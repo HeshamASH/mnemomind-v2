@@ -272,7 +272,7 @@ const App: React.FC = () => {
           return data.content;
         } catch (error) {
           setApiError(error instanceof Error ? error.message : 'Could not load file content.');
-return `Error: Could not load content for ${source.file_name}.`;
+          return `Error: Could not load content for ${source.fileName}.`;
         }
       }
 
@@ -285,7 +285,7 @@ return `Error: Could not load content for ${source.file_name}.`;
         return await getCloudFileContent(source);
       } catch (error) {
         setApiError(error instanceof Error ? error.message : 'Could not load file content.');
-        return `Error: Could not load content for ${source.file_name}.`;
+        return `Error: Could not load content for ${source.fileName}.`;
       }
   };
 
@@ -332,7 +332,9 @@ return `Error: Could not load content for ${source.file_name}.`;
         return;
     }
     
-    updateLastMessageInActiveChat(msg => ({ ...msg, sources: elasticResults }));
+    const sources: Source[] = elasticResults.map(r => r.source);
+    console.log("sources", sources);
+    updateLastMessageInActiveChat(msg => ({ ...msg, sources }));
 
     const modelToUse = MODELS.find(m => m.id === selectedModel)?.model || MODELS[0].model;
     const responseStream = await streamAiResponse(currentMessages, elasticResults, modelToUse, activeChat.groundingOptions, location);
@@ -380,7 +382,7 @@ return `Error: Could not load content for ${source.file_name}.`;
     const searchResults = await searchElastic(latestQuery);
     
     const editableSearchResults = searchResults.filter(r => {
-        const extension = r.source.file_name.split('.').pop()?.toLowerCase();
+        const extension = r.source.fileName.split('.').pop()?.toLowerCase();
         return extension && EDITABLE_EXTENSIONS.includes(extension);
     });
     
@@ -401,12 +403,12 @@ return `Error: Could not load content for ${source.file_name}.`;
         if (responseObject.error) throw new Error(responseObject.error);
         
         const fullPath = responseObject.filePath;
-        const file = allFiles.find(f => `${f.path}/${f.file_name}` === fullPath);
+        const file = allFiles.find(f => `${f.path}/${f.fileName}` === fullPath);
         
         if (!file) throw new Error(`The model suggested editing a file I couldn't find: ${fullPath}`);
 
         const originalContent = await getFileContent(file);
-        if (originalContent === null) throw new Error(`Could not fetch original content for ${file.file_name}.`);
+        if (originalContent === null) throw new Error(`Could not fetch original content for ${file.fileName}.`);
 
         const suggestion: CodeSuggestion = {
             file,
@@ -416,7 +418,7 @@ return `Error: Could not load content for ${source.file_name}.`;
             status: 'pending',
         };
         updateLastMessageInActiveChat(msg => ({ ...msg, content: `I have a suggestion for 
-file:${file.file_name}". Here are the changes:`, suggestion }));
+file:${file.fileName}". Here are the changes:`, suggestion }));
     } catch (e) {
         console.error("Code generation parsing error:", e);
         const errorMessage = e instanceof Error ? e.message : "Sorry, I couldn't generate the edit correctly.";
@@ -568,12 +570,12 @@ file:${file.file_name}". Here are the changes:`, suggestion }));
           const { success, newDataset } = updateFileContent(file, suggestedContent, activeChat.dataset);
           if (!success) {
             followUpMessage = { role: MessageRole.MODEL, content: `Sorry, I failed to apply the changes to 
-file:${file.file_name}". Could not find the file in the preloaded dataset.` };
+file:${file.fileName}". Could not find the file in the preloaded dataset.` };
           } else {
             updateActiveChat(c => ({...c, dataset: newDataset}));
             setEditedFiles(prev => new Map(prev).set(file!.id, { file: file!, originalContent: prev.get(file!.id)?.originalContent ?? originalContent, currentContent: suggestedContent }));
             followUpMessage = { role: MessageRole.MODEL, content: `Great! I've applied the changes to 
-file:${file.file_name}".`, editedFile: file };
+file:${file.fileName}".`, editedFile: file };
           }
       } else {
           followUpMessage = { role: MessageRole.MODEL, content: "Okay, I've discarded the changes." };
@@ -662,7 +664,6 @@ file:${file.file_name}".`, editedFile: file };
                 groundingOptions={activeChat?.groundingOptions}
                 onGroundingOptionsChange={handleGroundingOptionsChange}
                 apiError={apiError}
-                setApiError={setApiError}
                 cloudSearchError={cloudSearchError}
               />
            </ErrorBoundary>
