@@ -19,8 +19,8 @@ const FolderIcon: React.FC<{ isOpen: boolean }> = ({ isOpen }) => (
     </svg>
 );
 
-const getFileIcon = (fileName: string) => {
-    const extension = fileName.split('.').pop()?.toLowerCase();
+const getFileIcon = (file_name: string) => {
+    const extension = file_name.split('.').pop()?.toLowerCase();
     switch (extension) {
         case 'js':
         case 'jsx':
@@ -88,9 +88,9 @@ const buildFileTree = (files: Source[]): TreeNode[] => {
     });
 
     currentNode.children.push({
-      name: file.fileName,
+      name: file.file_name,
       type: 'file',
-      path: file.path ? `${file.path}/${file.fileName}` : file.fileName,
+      path: file.path ? `${file.path}/${file.file_name}` : file.file_name,
       source: file,
       children: [],
     });
